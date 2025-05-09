@@ -84,11 +84,11 @@ def predict(image, model):
 
 
 # Streamlit UI
-st.title("🌿 Plant Disease Classifier")
+st.title("🌿 Tomato Leaf Disease detection")
 st.markdown("Compare different deep learning architectures for leaf disease detection.")
 
 # Model selection
-model_name = st.selectbox("Select Model Architecture", ["ANN", "CNN", "YOLOv7", "ViT"])
+model_name = st.selectbox("Select Model Architecture", [ "CNN", "YOLOv7",])
 
 # Load model with spinner
 with st.spinner('Loading model...'):
@@ -136,17 +136,9 @@ if uploaded_file:
 st.sidebar.header("🧠 Model Info")
 st.sidebar.subheader("Architecture Details")
 st.sidebar.write("""
-- **ANN**: Fully connected (3 hidden layers)
 - **CNN**: 4-layer convolutional network
 - **YOLOv7**: Custom CNN backbone with 4 blocks
-- **ViT**: Vision Transformer (pretrained on ImageNet)
 """)
 
 st.sidebar.subheader("Model Performance")
-st.sidebar.write("""
-(Placeholder metrics — replace with actual results):
-- ANN: XX% accuracy
-- CNN: XX% accuracy
-- YOLOv7: XX% accuracy
-- ViT: XX% accuracy
-""")
+
