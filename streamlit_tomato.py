@@ -36,11 +36,7 @@ transform = transforms.Compose([
 # Model loading function
 def load_model(model_name):
     model_map = {
-        "ANN": {
-            "class": ANN,
-            "args": {"input_size": 224 * 224 * 3, "num_classes": len(class_names)},
-            "file": "best_ann_model.pth"
-        },
+       
         "CNN": {
             "class": CNN,
             "args": {"num_classes": len(class_names)},
@@ -51,11 +47,7 @@ def load_model(model_name):
             "args": {"num_classes": len(class_names)},
             "file": "best_yolov7_model.pth"
         },
-        "ViT": {
-            "class": create_vit_model,  # function, not class
-            "args": {"num_classes": len(class_names)},
-            "file": "best_vit_model.pth"
-        }
+        
     }
 
     config = model_map[model_name]
