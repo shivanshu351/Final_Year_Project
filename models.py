@@ -1,8 +1,6 @@
-# models.py
 import torch
 import torch.nn as nn
 from torchvision import models
-
 
 # ANN Model
 class ANN(nn.Module):
@@ -43,7 +41,6 @@ class CNN(nn.Module):
             nn.ReLU(),
             nn.MaxPool2d(2, 2)
         )
-
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.classifier = nn.Sequential(
             nn.Linear(256, 128),
@@ -69,7 +66,6 @@ class YOLOv7Backbone(nn.Module):
             nn.BatchNorm2d(32),
             nn.SiLU()
         )
-
         self.blocks = nn.Sequential(
             nn.Conv2d(32, 64, 3, stride=2, padding=1, bias=False),
             nn.BatchNorm2d(64),
@@ -113,7 +109,6 @@ class YOLOv7Classifier(nn.Module):
         self.avgpool = nn.AdaptiveAvgPool2d(1)
         self.flatten = nn.Flatten()
 
-        # Calculate in_features automatically
         with torch.no_grad():
             dummy = torch.randn(1, 3, 224, 224)
             features = self.backbone(dummy)
@@ -129,28 +124,55 @@ class YOLOv7Classifier(nn.Module):
         return self.classifier(flattened)
 
 
-# Vision Transformer Model
-def create_vit_model(num_classes):
-    model = models.vit_b_16(weights=models.ViT_B_16_Weights.IMAGENET1K_SWAG_LINEAR_V1)
+# Vision Transformer Model with Custom Head
+class ViTClassifier(nn.Module):
+    def __init__(self, num_classes, dropout_rate=0.3):
+        super(ViTClassifier, self).__init__()
+        # Load pretrained ViT
+        self.model = models.vit_b_16(weights=models.ViT_B_16_Weights.IMAGENET1K_SWAG_LINEAR_V1)
+        
+        # Freeze all parameters
+        for param in self.model.parameters():
+            param.requires_grad = False
 
-    # Freeze all layers initially
-    for param in model.parameters():
-        param.requires_grad = False
+        # Unfreeze selected layers
+        for name, param in self.model.named_parameters():
+            if any(layer in name for layer in [
+                'encoder.layers.encoder_layer_11',
+                'encoder.layers.encoder_layer_10',
+                'encoder.layers.encoder_layer_9',
+                'encoder.layers.encoder_layer_8',
+                'heads'
+            ]):
+                param.requires_grad = True
 
-    # Unfreeze last 4 transformer blocks
-    for param in model.encoder.layers[-4:].parameters():
-        param.requires_grad = True
+        # Custom head definition (same as training)
+        class CustomHead(nn.Module):
+            def __init__(self, in_features, num_classes, dropout_rate):
+                super().__init__()
+                self.fc1 = nn.Linear(in_features, 512)
+                self.ln1 = nn.LayerNorm(512)
+                self.dropout1 = nn.Dropout(dropout_rate)
+                self.fc2 = nn.Linear(512, 256)
+                self.ln2 = nn.LayerNorm(256)
+                self.dropout2 = nn.Dropout(dropout_rate / 2)
+                self.fc3 = nn.Linear(256, num_classes)
+                self.gelu = nn.GELU()
 
-    # Replace head with custom classifier
-    model.heads = nn.Sequential(
-        nn.Linear(768, 512),
-        nn.GELU(),
-        nn.BatchNorm1d(512),
-        nn.Dropout(0.3),
-        nn.Linear(512, 256),
-        nn.GELU(),
-        nn.BatchNorm1d(256),
-        nn.Dropout(0.15),
-        nn.Linear(256, num_classes)
-    )
-    return model
+            def forward(self, x):
+                identity = x
+                x = self.fc1(x)
+                x = self.ln1(x)
+                x = self.gelu(x)
+                x = self.dropout1(x)
+                x = self.fc2(x)
+                x = self.ln2(x)
+                x = self.gelu(x)
+                x = self.dropout2(x)
+                x = self.fc3(x + identity[:, :256])
+                return x
+
+        self.model.heads = CustomHead(768, num_classes, dropout_rate)
+
+    def forward(self, x):
+        return self.model(x)

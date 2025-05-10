@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from torchvision import transforms
 
 # Import your model architectures here
-from models import ANN, CNN, YOLOv7Classifier, create_vit_model
+from models import  CNN, YOLOv7Classifier, ViTClassifier
 
 # Custom CSS for styling
 st.markdown("""
@@ -90,22 +90,20 @@ def load_model(model_name):
             "args": {"num_classes": len(class_names)},
             "file": "best_yolov7_model.pth"
         },
+        "ViT": {
+            "class": ViTClassifier,
+            "args": {"num_classes": len(class_names), "dropout_rate": 0.3},
+            "file": "model_epoch_30.pth"
+        }
     }
 
     config = model_map[model_name]
-    
-    # Instantiate the model
-    if model_name == "ViT":
-        model = config["class"](**config["args"])
-    else:
-        model = config["class"](**config["args"])
-
-    # Load weights
+    model = config["class"](**config["args"])
     model.load_state_dict(torch.load(config["file"], map_location=device))
     model = model.to(device)
     model.eval()
-
     return model
+
 
 # Prediction function
 def predict(image, model):
@@ -148,7 +146,7 @@ with st.sidebar:
 # Model selection
 model_name = st.selectbox(
     "Select Model Architecture", 
-    ["CNN", "YOLOv7"],
+    ["CNN", "YOLOv7", "ViT"],
     help="Choose the deep learning model for analysis"
 )
 
