@@ -99,12 +99,15 @@ def load_model(model_name):
 
     config = model_map[model_name]
     model = config["class"](**config["args"])
-    
+
+    # Load checkpoint
     checkpoint = torch.load(config["file"], map_location=device)
-    
-    # Check if it's a full checkpoint or just a state_dict
-    if 'model_state_dict' in checkpoint:
+
+    # Handle different checkpoint structures
+    if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint:
         model.load_state_dict(checkpoint['model_state_dict'])
+    elif isinstance(checkpoint, dict) and 'state_dict' in checkpoint:
+        model.load_state_dict(checkpoint['state_dict'])
     else:
         model.load_state_dict(checkpoint)
 

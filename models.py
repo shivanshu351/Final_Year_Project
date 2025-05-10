@@ -124,18 +124,15 @@ class YOLOv7Classifier(nn.Module):
         return self.classifier(flattened)
 
 
-# Vision Transformer Model with Custom Head
+# ViT with Custom Head
 class ViTClassifier(nn.Module):
     def __init__(self, num_classes, dropout_rate=0.3):
         super(ViTClassifier, self).__init__()
-        # Load pretrained ViT
         self.model = models.vit_b_16(weights=models.ViT_B_16_Weights.IMAGENET1K_SWAG_LINEAR_V1)
-        
-        # Freeze all parameters
+
         for param in self.model.parameters():
             param.requires_grad = False
 
-        # Unfreeze selected layers
         for name, param in self.model.named_parameters():
             if any(layer in name for layer in [
                 'encoder.layers.encoder_layer_11',
@@ -146,7 +143,6 @@ class ViTClassifier(nn.Module):
             ]):
                 param.requires_grad = True
 
-        # Custom head definition (same as training)
         class CustomHead(nn.Module):
             def __init__(self, in_features, num_classes, dropout_rate):
                 super().__init__()
